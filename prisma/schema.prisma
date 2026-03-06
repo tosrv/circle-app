@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id            Int     @id @default(autoincrement())
+  username      String  @unique
+  full_name     String
+  email         String  @unique
+  password      String
+  photo_profile String?
+  bio           String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  followings Following[] @relation("UserFollowing")
+  followers  Following[] @relation("UserFollower")
+
+  likes      Likes[]
+  replies    Replies[]
+  replyLikes ReplyLikes[]
+
+  threadsCreated Threads[] @relation("ThreadsCreated")
+  threadsUpdated Threads[] @relation("ThreadsUpdated")
+
+  likesCreated Likes[] @relation("LikesCreated")
+  likesUpdated Likes[] @relation("LikesUpdated")
+
+  repliesCreated Replies[] @relation("RepliesCreated")
+  repliesUpdated Replies[] @relation("RepliesUpdated")
+}
+
+model Following {
+  id           Int @id @default(autoincrement())
+  following_id Int
+  follower_id  Int
+
+  following Users @relation("UserFollower", fields: [following_id], references: [id])
+  follower  Users @relation("UserFollowing", fields: [follower_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([following_id, follower_id])
+}
+
+model Threads {
+  id                Int      @id @default(autoincrement())
+  content           String
+  images            String[]
+  number_of_replies Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  created_by Int
+  updated_by Int?
+
+  created Users  @relation("ThreadsCreated", fields: [created_by], references: [id])
+  updated Users? @relation("ThreadsUpdated", fields: [updated_by], references: [id])
+
+  likes   Likes[]
+  replies Replies[]
+}
+
+model Likes {
+  id        Int @id @default(autoincrement())
+  user_id   Int
+  thread_id Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  created_by Int
+  updated_by Int?
+
+  user   Users   @relation(fields: [user_id], references: [id])
+  thread Threads @relation(fields: [thread_id], references: [id])
+
+  created Users  @relation("LikesCreated", fields: [created_by], references: [id])
+  updated Users? @relation("LikesUpdated", fields: [updated_by], references: [id])
+
+  @@unique([user_id, thread_id])
+}
+
+model Replies {
+  id      Int      @id @default(autoincrement())
+  content String
+  images  String[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user_id   Int
+  thread_id Int
+
+  created_by Int
+  updated_by Int?
+
+  user   Users   @relation(fields: [user_id], references: [id])
+  thread Threads @relation(fields: [thread_id], references: [id])
+
+  created    Users        @relation("RepliesCreated", fields: [created_by], references: [id])
+  updated    Users?       @relation("RepliesUpdated", fields: [updated_by], references: [id])
+  replyLikes ReplyLikes[]
+}
+
+model ReplyLikes {
+  id       Int @id @default(autoincrement())
+  user_id  Int
+  reply_id Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user  Users   @relation(fields: [user_id], references: [id])
+  reply Replies @relation(fields: [reply_id], references: [id])
+
+  @@unique([user_id, reply_id])
+}
