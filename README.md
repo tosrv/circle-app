@@ -20,8 +20,7 @@
 - [License](#license) 
 
 ## About
-Circle is a social media platform that allows users to create their own circles, share threads, and interact with communities.  
-It is suitable for interest groups, clubs, and personal networks.  
+Circle is a social media platform that allows users to create their own circles, share threads, and interact with communities. It is suitable for interest groups, clubs, and personal networks.  
 
 ## Features
 - **Threads**: Post, comment, and interact with discussions  
