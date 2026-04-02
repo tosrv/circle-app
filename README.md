@@ -36,12 +36,17 @@ Circle is a social media platform that allows users to create their own circles,
 
 ## Installation
 
+```bash
+mkdir circle-app
+cd circle-app
+```
+
 ### Backend Setup
 
 ```bash
-git clone https://github.com/tosrv/circle-app.git
-cd circle-app/BE
-npm install
+git clone --branch backend --single-branch https://github.com/tosrv/circle-app.git
+mv circle-app backend
+cd backend
 ```
 
 - Copy `.env.example` to `.env` and update the variables:
@@ -55,6 +60,11 @@ UPSTASH_REDIS_URL=your_redis_url
 UPSTASH_REDIS_TOKEN=your_redis_token
 CLOUDINARY_URL=your_cloudinary_url
 ```
+- Install dependencies:
+
+```bash
+npm install
+```
 
 - Run the backend server:
 
@@ -67,7 +77,10 @@ npm run dev
 ### Frontend Setup
 
 ```bash
-cd ../FE
+cd ..
+git clone --branch main --single-branch https://github.com/tosrv/circle-app.git
+mv circle-app frontend
+cd frontend
 npm install
 ```
 
