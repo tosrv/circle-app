@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { asyncHandler } from "../../middleawares/async";
 import { AppError } from "../../utils/error";
-import { singleImageUrl, toImageUrl } from "../../utils/imageUrl";
 import {
   addThread,
   editThread,
@@ -13,6 +12,7 @@ import { broadcastEvent } from "../../sockets/websocket";
 import { timeAgo } from "../../utils/time";
 import { findUserById } from "../auth/auth.repository";
 import { redis } from "../../lib/redis";
+import { uploadToCloudinary } from "../../lib/cloudinary";
 
 const THREADS_CACHE_KEY = "threads:all";
 const THREADS_TTL = 30;
@@ -55,11 +55,11 @@ export const getThreads = asyncHandler(async (req: Request, res: Response) => {
 
   const data = threads.map((thread) => ({
     ...thread,
-    images: toImageUrl(thread.images),
+    images: thread.images,
     created_at: timeAgo(thread.created_at),
     created: {
       ...thread.created,
-      photo_profile: singleImageUrl(thread.created.photo_profile || ""),
+      photo_profile: thread.created.photo_profile || "",
     },
   }));
 
@@ -90,10 +90,10 @@ export const getThread = asyncHandler(
 
     const data = {
       ...thread,
-      images: toImageUrl(thread.images),
+      images: thread.images,
       created: {
         ...thread.created,
-        photo_profile: singleImageUrl(thread.created.photo_profile || ""),
+        photo_profile: thread.created.photo_profile || "",
       },
     };
 
@@ -112,17 +112,24 @@ export const createThread = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = (req as any).user.id;
     const content = req.body.content;
-    const images = req.files as Express.Multer.File[];
-    const image: string[] = images?.map((img) => img.filename) || [];
 
-    const newThread = await addThread(userId, content, image);
+    const files = req.files as Express.Multer.File[];
+
+    const imageUrls: string[] = await Promise.all(
+      files.map(async (file) => {
+        const result: any = await uploadToCloudinary(file.buffer, userId);
+        return result.secure_url;
+      }),
+    );
+
+    const newThread = await addThread(userId, content, imageUrls);
     const data = {
       ...newThread,
-      images: toImageUrl(newThread.images),
+      images: newThread.images,
       created_at: timeAgo(newThread.created_at),
       created: {
         ...newThread.created,
-        photo_profile: singleImageUrl(newThread.created.photo_profile || ""),
+        photo_profile: newThread.created.photo_profile || "",
       },
     };
 
@@ -172,18 +179,24 @@ export const updateThread = asyncHandler(
     const userId = (req as any).user.id;
     const threadId = Number(req.params.id);
     const content = req.body.content;
-    const images = req.files as Express.Multer.File[];
-    const image: string[] = images?.map((img) => img.filename) || [];
+    const files = req.files as Express.Multer.File[];
+
+    const imageUrls: string[] = await Promise.all(
+      files.map(async (file) => {
+        const result: any = await uploadToCloudinary(file.buffer, userId);
+        return result.secure_url;
+      }),
+    );
 
     await author(userId, threadId);
-    const updated = await editThread(threadId, content, image);
+    const updated = await editThread(threadId, content, imageUrls);
 
     const data = {
       ...updated,
-      images: toImageUrl(updated.images),
+      images: updated.images,
       created: {
         ...updated.created,
-        photo_profile: singleImageUrl(updated.created.photo_profile || ""),
+        photo_profile: updated.created.photo_profile || "",
       },
     };
 

@@ -12,7 +12,6 @@ import {
   unfollowUser,
 } from "./follows.repository";
 import { AppError } from "../../utils/error";
-import { singleImageUrl } from "../../utils/imageUrl";
 import { broadcastFollow } from "../../sockets/websocket";
 
 // User to follow
@@ -25,7 +24,7 @@ export const usersToFollow = asyncHandler(
 
     const data = users.map((user) => ({
       ...user,
-      photo_profile: singleImageUrl(user?.photo_profile || ""),
+      photo_profile: user?.photo_profile || "",
     }));
 
     res.status(200).json({
@@ -55,7 +54,7 @@ export const getFollows = asyncHandler(async (req: Request, res: Response) => {
 
   const data = follow.map((user) => ({
     ...user,
-    photo_profile: singleImageUrl(user.photo_profile || ""),
+    photo_profile: user.photo_profile || "",
   }));
 
   res.status(200).json({

@@ -5,9 +5,9 @@ import {
   findUserByUsernameOrName,
   findUsername,
 } from "./user.repository";
-import { singleImageUrl } from "../../utils/imageUrl";
 import { countFollowers, countFollowing } from "../follows/follows.repository";
 import { AppError } from "../../utils/error";
+import { uploadToCloudinary } from "../../lib/cloudinary";
 
 // Display by username
 export const findUsers = asyncHandler(
@@ -24,7 +24,7 @@ export const findUsers = asyncHandler(
         const followingCount = await countFollowing(user.id);
         return {
           ...user,
-          photo_profile: singleImageUrl(user.photo_profile || ""),
+          photo_profile: user.photo_profile || "",
           followers_count: followersCount,
           following_count: followingCount,
           is_following: user.followers.length > 0,
@@ -65,18 +65,26 @@ export const usernameCheck = asyncHandler(
 export const updateUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { username, fullname, bio } = req.body;
-    const image = req.file?.filename;
+    const userId = (req as any).user.id;
+    const file = req.file;
+
+    let imageUrl: string | undefined
+    if (file) {
+      const result: any = await uploadToCloudinary(file.buffer, userId);
+      imageUrl = result.secure_url;
+    }
+
     const user = await editUser(
-      (req as any).user.id,
+      userId,
       username,
       fullname,
       bio,
-      image,
+      imageUrl,
     );
 
     const data = {
       ...user,
-      photo_profile: singleImageUrl(user.photo_profile || ""),
+      photo_profile: user.photo_profile || "",
     };
 
     res.status(200).json({

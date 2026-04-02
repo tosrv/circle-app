@@ -9,7 +9,6 @@ import {
 } from "./auth.repository";
 import { signToken } from "../../utils/jwt";
 import { asyncHandler } from "../../middleawares/async";
-import { singleImageUrl } from "../../utils/imageUrl";
 import { countFollowers, countFollowing } from "../follows/follows.repository";
 
 // Registration
@@ -78,7 +77,7 @@ export const sendUser = asyncHandler(
 
     const data = {
       ...user,
-      photo_profile: singleImageUrl(user?.photo_profile || ""),
+      photo_profile: user?.photo_profile || "",
       followers_count: followersCount,
       following_count: followingCount,
     };

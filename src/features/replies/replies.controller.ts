@@ -3,8 +3,8 @@ import { asyncHandler } from "../../middleawares/async";
 import { requireThread, requireUser } from "../thread/thread.controller";
 import { addReply, findReplies } from "./replies.repository";
 import { broadcastReply } from "../../sockets/websocket";
-import { singleImageUrl, toImageUrl } from "../../utils/imageUrl";
 import { prisma } from "../../lib/prisma";
+import { uploadToCloudinary } from "../../lib/cloudinary";
 
 // New reply
 export const createReply = asyncHandler(
@@ -12,19 +12,25 @@ export const createReply = asyncHandler(
     const userId = (req as any).user.id;
     const threadId = Number(req.params.id);
     const content = req.body.content;
-    const images = req.files as Express.Multer.File[];
-    const image: string[] = images?.map((img) => img.filename) || [];
+    const files = req.files as Express.Multer.File[];
+
+    const imageUrls: string[] = await Promise.all(
+      files.map(async (file) => {
+        const result: any = await uploadToCloudinary(file.buffer, userId);
+        return result.secure_url;
+      }),
+    );
 
     const user = await requireUser(userId);
     await requireThread(threadId);
 
-    const reply = await addReply(threadId, user.id, content, image);
+    const reply = await addReply(threadId, user.id, content, imageUrls);
     const data = {
       ...reply,
-      images: toImageUrl(reply.images),
+      images: reply.images,
       created: {
         ...reply.created,
-        photo_profile: singleImageUrl(reply.created.photo_profile || ""),
+        photo_profile: reply.created.photo_profile || "",
       },
     };
 
@@ -64,10 +70,10 @@ export const getReplies = asyncHandler(
 
     const data = replies.map((reply) => ({
       ...reply,
-      images: toImageUrl(reply.images),
+      images: reply.images,
       created: {
         ...reply.created,
-        photo_profile: singleImageUrl(reply.created.photo_profile || ""),
+        photo_profile: reply.created.photo_profile || "",
       },
       likeCount: likeCountsMap[reply.id] || 0,
       isLiked: userLikedSet.has(reply.id),
